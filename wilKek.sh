@@ -21,7 +21,9 @@ SENDERNAM="sendername"
 RECIPIENT="other@some.us"
 
 TIME=$(date +%d"."%m"."%Y" "%H"."%M)
-echo "$TIME CHECKING FOR NEW MESSAGES...." >> "$WILOG"
+echo "#####################################################################" >> "$WILOG"
+echo "###         $TIME CHECKING FOR NEW MESSAGES...         ###" >> "$WILOG"
+echo "#####################################################################" >> "$WILOG"
 
 ##GET SESSION ID
 curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/' \
@@ -88,8 +90,10 @@ curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${kid}"'/me
   -H 'accept-language: en-US,en;q=0.9' \
   --compressed >> "$TMPF"
 done
+
 if [[ -f "$TMPF" ]]
 then
+  echo "###   NEW MESSAGES FOUND!" >> "$WILOG"
   mapfile -t < <(cat -A "$TMPF"|sed -e 's/{"Messages":\[//' -e 's/\}]//g' -e 's/\}/\}\n/g' -e 's/,{/{/g'|grep -o '^.*,"Status":1}$')
   for row in "${MAPFILE[@]}"
   do
@@ -162,7 +166,7 @@ then
         echo "" >> "$MESSAGE"
         cat "$MESSAGE_CONT" >> "$MESSAGE"
         mail -s "UUSI WILMAVIESTI $KIDNAME!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$MESSAGE"
-
+        echo "###   A new message for $KIDNAME, sent to $RECIPIENT...." >> "$WILOG"
         rm "$MESSAGE" "$MESSAGE_CONT"
 
         ##WAIT UNTIL PROCESSING NEXT MESSAGE
@@ -191,3 +195,6 @@ curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/logout' \
 
 ##CLEAN UP OF TEMP FILES
 rm "$COOKIE"
+echo "#####################################################################" >> "$WILOG"
+echo "###                             DONE                             ####" >> "$WILOG"
+echo "#####################################################################" >> "$WILOG"
