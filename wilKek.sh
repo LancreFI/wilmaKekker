@@ -155,7 +155,7 @@ then
         -e 's/&auml;/ä/g' -e 's/&Auml;/Ä/g' -e 's/&ouml;/ö/g' -e 's/&Ouml;/Ö/g' -e 's/&acute;/-/g' -e 's/&nbsp;/ /g' \
         -e 's/&quot;/"/g' -e 's/&eacute;/e/g' -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/&/g' -e "s/&apos;/\'/g" \
         -e 's/&euro;/eur./g' -e 's/&aring;/å/g' -e 's/&Aring;/Å/g' -e 's/&Aacute;/Alk./g' -e 's/&aacute;/alk./g' \
-        -e 's/&rdquo;/"/g' -e 's/&ldquo;/"/g' -e 's/&ndash;/-/g' "$MESSAGE_CONT"
+        -e 's/&rdquo;/"/g' -e 's/&ldquo;/"/g' -e 's/&ndash;/-/g' -e 's/&times;/ x /g' "$MESSAGE_CONT"
 
         KIDNAME=$(grep -o '<a href="/!'"$KIDID"'">.*<' "$MESSAGE" | sed -e 's/<[^>]*>//g' -e 's/<//')
 
