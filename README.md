@@ -15,5 +15,15 @@ Not much error checking atm. maybe I'll add some later...
 
 I take no responsibility of anything you decide to do with this.
 </br>
+</br>----</br>
+</br>Update 310821: Fixed a lot of bugs, added a parser to parse all links to text and also a decrypter to decrypt the Cloudflare Email Address Obfuscation and include the email addresses in the content as text.</br>
+</br>
+----</br>
+</br>
+Todo: 
+    - At some point also identify message replies as new messages and email them.</br>
+    - Also email all notifications and notes from the teachers.</br>
+    - Something something, dumpster fire.</br>
+</br>
 #####################################</br>
 -Wilmaviestit sähköpostiin
