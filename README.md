@@ -20,7 +20,7 @@ I take no responsibility of anything you decide to do with this.
 </br>
 ----</br>
 </br>
-Todo: 
+Todo: </br>
     - At some point also identify message replies as new messages and email them.</br>
     - Also email all notifications and notes from the teachers.</br>
     - Something something, dumpster fire.</br>
