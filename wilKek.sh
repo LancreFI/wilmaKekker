@@ -21,6 +21,7 @@ SENDERNAM="sendername"
 RECIPIENT="other@some.us"
 
 TIME=$(date +%d"."%m"."%Y" "%H"."%M)
+
 echo "#####################################################################" >> "$WILOG"
 echo "###         $TIME CHECKING FOR NEW MESSAGES...         ###" >> "$WILOG"
 echo "#####################################################################" >> "$WILOG"
@@ -29,7 +30,7 @@ echo "#####################################################################" >> 
 curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/' \
   -H 'authority: '"${WILURL}" \
   -H 'upgrade-insecure-requests: 1' \
-  -H 'user-agent: wilKekker' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: none' \
@@ -49,7 +50,7 @@ curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/login' \
   -H 'upgrade-insecure-requests: 1' \
   -H 'origin: https://'"${WILURL}" \
   -H 'content-type: application/x-www-form-urlencoded' \
-  -H 'user-agent: wilKekker' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: same-origin' \
@@ -80,7 +81,7 @@ do
 curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${kid}"'/messages/list' \
   -H 'authority: '"${WILURL}" \
   -H 'accept: */*' \
-  -H 'user-agent: wilKekker' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
   -H 'x-requested-with: XMLHttpRequest' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: same-origin' \
@@ -93,86 +94,135 @@ done
 
 if [[ -f "$TMPF" ]]
 then
-  echo "###   NEW MESSAGES FOUND!" >> "$WILOG"
-  mapfile -t < <(cat -A "$TMPF"|sed -e 's/{"Messages":\[//' -e 's/\}]//g' -e 's/\}/\}\n/g' -e 's/,{/{/g'|grep -o '^.*,"Status":1}$')
-  for row in "${MAPFILE[@]}"
-  do
-        MSGID=$(echo "$row"|grep -o 'Id":.*"Sub'|sed -e 's/Id"://' -e 's/,.*$//')
-        KIDID=$(echo "$row"|grep -o '\!.*[0-9]\\'|sed -e 's/\!//' -e 's/\\//')
-
-        curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/messages/'"${MSGID}" \
-          -H 'authority: '"${WILURL}" \
-          -H 'sec-ch-ua: "Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"' \
-          -H 'sec-ch-ua-mobile: ?0' \
-          -H 'upgrade-insecure-requests: 1' \
-          -H 'user-agent: wilKekker' \
-          -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
-          -H 'sec-fetch-site: same-origin' \
-          -H 'sec-fetch-mode: navigate' \
-          -H 'sec-fetch-user: ?1' \
-          -H 'sec-fetch-dest: document' \
-          -H $'referer: https://'"${WILURL}"'/!.'"${KIDID}"'/messages' \
-          -H 'accept-language: en-US,en;q=0.9' \
-          --compressed > "$MESSAGE"
-
-        ROWS=$(wc -l < "$MESSAGE")
-        SROW=$(grep -n proptable "$MESSAGE"|sed 's/:.*$//')
-        CONTENTSTART=$(grep -n "ckeditor hidden" "$MESSAGE"|sed 's/:.*$//')
-
-        tail -n "$(($ROWS-$CONTENTSTART+1))" "$MESSAGE" > "$TMPF"
-        CONTENTEND=$(grep -m 1 -n "</div>" "$TMPF"|sed 's/:.*$//')
-        head -n"$CONTENTEND" "$TMPF" > "$MESSAGE_CONT"
-        rm "$TMPF"
-        TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//')
-        SENDERN=$(grep -n "<th>L.*hett" "$MESSAGE"|sed 's/:.*$//')
-        SENDERN=$((SENDERN+4))
-        SENTN=$(grep -n "<th>L.*hetet" "$MESSAGE"|sed 's/:.*$//')
-        SENTN=$((SENTN+1))
-
-        SENT=$(sed "$SENTN"'q;d' "$MESSAGE"|sed -e 's/^.*<td>//' -e 's/<b.*$//')
-        SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//')
-
-        if grep -q "<a href" "$MESSAGE_CONT"
-        then
-                mapfile -t ROW < <(grep -n "<a href" "$MESSAGE_CONT"|sed 's/:.*$//')
-                mapfile -t LINK < <(grep -o "<a href.*>" "$MESSAGE_CONT"|sed -e 's/<a href="//' -e 's/">.*$//')
-                ##AS THE LINK TEXT MIGHT CONTAIN MORE THAN ONE WORD
-                mapfile -t LINKTXT < <(grep -o "<a href.*<\/a>" "$MESSAGE_CONT"|sed -e 's/^.*">//' -e 's/<.*$//')
-        fi
-
-        COUNT=0
-        for row in "${ROW[@]}"
+        echo "###   NEW MESSAGES FOUND!" >> "$WILOG"
+        mapfile -t < <(cat -A "$TMPF"|sed -e 's/{"Messages":\[//' -e 's/\}]//g' -e 's/\}/\}\n/g' -e 's/,{/{/g'|grep -o '^.*,"Status":1}$')
+        for row in "${MAPFILE[@]}"
         do
-                REPL="${LINKTXT[$COUNT]} ${LINK[$COUNT]}"
+                MSGID=$(echo "$row"|grep -o 'Id":.*"Sub'|sed -e 's/Id"://' -e 's/,.*$//')
+                KIDID=$(echo "$row"|grep -o '\!.*[0-9]\\'|sed -e 's/\!//' -e 's/\\//')
 
-                ##NEED TO ESCAPE ALL SPECIAL CHARACTERS, OTHERWISE SED WILL TRY TO INTERPRET THEM
-                REP=$(echo -e "$REPL" | sed -e 's/\//\\\//g' -e 's/\./\\\./g' -e 's/\&/\\\&/g' -e 's/\$/\\\$/g' -e 's/\%/\\\%/g' -e 's/\?/\\\?/g' -e 's/\!/\\\!/g' -e 's/\*/\\\*/g')
-                sed -i "$row""s/<a href.*<\/a>/""$REP""/" "$MESSAGE_CONT"
-                COUNT=$((COUNT+1))
+                curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/messages/'"${MSGID}" \
+                  -H 'authority: '"${WILURL}" \
+                  -H 'sec-ch-ua: "Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"' \
+                  -H 'sec-ch-ua-mobile: ?0' \
+                  -H 'upgrade-insecure-requests: 1' \
+                  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36' \
+                  -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
+                  -H 'sec-fetch-site: same-origin' \
+                  -H 'sec-fetch-mode: navigate' \
+                  -H 'sec-fetch-user: ?1' \
+                  -H 'sec-fetch-dest: document' \
+                  -H $'referer: https://'"${WILURL}"'/!.'"${KIDID}"'/messages' \
+                  -H 'accept-language: en-US,en;q=0.9' \
+                  --compressed > "$MESSAGE"
+
+                ROWS=$(wc -l < "$MESSAGE")
+                SROW=$(grep -n proptable "$MESSAGE"|sed 's/:.*$//')
+                CONTENTSTART=$(grep -n "ckeditor hidden" "$MESSAGE"|sed 's/:.*$//')
+
+                tail -n "$(($ROWS-$CONTENTSTART+1))" "$MESSAGE" > "$TMPF"
+                CONTENTEND=$(grep -m 1 -n "</div>" "$TMPF"|sed 's/:.*$//')
+                head -n"$CONTENTEND" "$TMPF" > "$MESSAGE_CONT"
+                rm "$TMPF"
+                TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//')
+                SENDERN=$(grep -n "<th>L.*hett" "$MESSAGE"|sed 's/:.*$//')
+                SENDERN=$((SENDERN+4))
+                SENTN=$(grep -n "<th>L.*hetet" "$MESSAGE"|sed 's/:.*$//')
+                SENTN=$((SENTN+1))
+
+                SENT=$(sed "$SENTN"'q;d' "$MESSAGE"|sed -e 's/^.*<td>//' -e 's/<b.*$//')
+                SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//')
+
+                ##Kudos to dsmsk80 @https://unix.stackexchange.com/questions/92447/bash-script-to-get-ascii-values-for-alphabet
+                chr() {
+                        [ "$1" -lt 256 ] || return 1
+                        printf "\\$(printf '%03o' "$1")"
+                }
+
+                ##GET ALL THE MAIL ADDRESSES FROM THE MESSAGE AND DECODE THEM
+                if grep -q "data-cfemail" "$MESSAGE_CONT"
+                then
+                        mapfile -t ENCRYPTED < <(grep -n "data-cfemail=" "$MESSAGE_CONT")
+                        for rows in "${ENCRYPTED[@]}"
+                        do
+                                ENCROW=$(echo "$rows"|sed 's/:.*$//g')
+                                COUNTER=0
+                                ##THE MAIL ADDRESS IS ENCODED IN LOWER CASE HEX
+                                mapfile -t ENCDATA < <(sed "$ENCROW""q;d" "$MESSAGE_CONT"|grep -Po "<a href=.+?data-cfemail.+?</a>"|sed -e 's/^.*cfemail=\"//' -e 's/\".*$//')
+                                for ENCSTR in "${ENCDATA[@]}"
+                                do
+                                        ENCLEN=$(expr length "$ENCSTR")
+                                        ##TO UPPERCASE, OTHERWISE THE BASE CONVERSION WILL FAIL
+                                        ##THE FIRST HEX IS USED AS A BASE IN XOR
+                                        BASE=$(echo "${ENCSTR^^}"|cut -c1-2)
+                                        ##SO WE FIRST CONVERT IT ALONE
+                                        DECBASE=$(echo "ibase=16; $BASE"|bc)
+                                        DECODEDADD=""
+                                        COUNTER=3
+                                        while [ "$COUNTER" -lt "$ENCLEN" ]
+                                        do
+                                                ##TO UPPERCASE, OTHERWISE THE BASE CONVERSION WILL FAIL
+                                                ENCED=$(echo "${ENCSTR^^}"|cut -c"$COUNTER"-"$((COUNTER+1))")
+                                                ((COUNTER+=2))
+                                                ##THEN WE CONVERT THE FOLLOWING PARTS ONE BY ONE
+                                                DECED=$(echo "ibase=16; $ENCED"|bc)
+                                                ##AND XOR THEM WITH THE FIRST TWO HEXES CONVERTED AND SAVE THEM IN A STRING
+                                                DECODEDADD+=$(chr $(( ${DECBASE^^} ^ $DECED)))
+                                        done
+                                        ##NEED TO ESCAPE ALL SPECIAL CHARACTERS, OTHERWISE SED WILL TRY TO INTERPRET THEM
+                                        DECREP=$(echo -e "$DECODEDADD" | sed -e 's/\//\\\//g' -e 's/\./\\\./g' -e 's/\&/\\\&/g' -e 's/\$/\\\$/g' -e 's/\%/\\\%/g' -e 's/\?/\\\?/g' -e 's/\!/\\\!/g' -e 's/\*/\\\*/g')
+                                        sed -E -i "$ENCROW"'s|<a href=.+?'"$ENCSTR"'|'"$DECREP"'|' "$MESSAGE_CONT"
+                                        sed -E -i "$ENCROW"'s/">.email.#[0-9]{1,4}.protected.//' "$MESSAGE_CONT"
+                                done
+                        done
+                fi
+
+                if grep -q "<a href" "$MESSAGE_CONT"
+                then
+                        mapfile -t LINKROW < <(grep -n "<a href" "$MESSAGE_CONT")
+                        for rows in "${LINKROW[@]}"
+                        do
+                                ROW=$(echo "$rows"|sed 's/:.*$//g')
+                                COUNTER=0
+                                mapfile -t LINK < <(sed "$ROW""q;d" "$MESSAGE_CONT"|grep -Po "<a href=\".+?(?=\")"|sed 's/^.*"//')
+                                ##GETS ALL THE TEXTS, BUT PUTS THEM ON ONE ROW AND THERE*S NO WAY OF KNOWING WHICH PART BELONGS TO WHAT LINK
+                                mapfile -t LINKTXT < <(sed "$ROW""q;d" "$MESSAGE_CONT"|grep -Po "<a href=.+?(?=<\/a>)"|sed -e 's/<a href=.*">//' -e 's/<.*$//') #|tr "##:" "\n")
+                                for lin in "${LINKTXT[@]}"
+                                do
+                                        REPL="$lin ${LINK[$COUNTER]}"
+                                        ##NEED TO ESCAPE ALL SPECIAL CHARACTERS, OTHERWISE SED WILL TRY TO INTERPRET THEM
+                                        REP=$(echo -e "$REPL" | sed -e 's/\//\\\//g' -e 's/\./\\\./g' -e 's/\&/\\\&/g' -e 's/\$/\\\$/g' -e 's/\%/\\\%/g' -e 's/\?/\\\?/g' -e 's/\!/\\\!/g' -e 's/\*/\\\*/g')
+                                        sed -i "$ROW"'s|<a href="'"${LINK[$COUNTER]}"'">'"$lin"'<\/a>|'"$REP"'|' "$MESSAGE_CONT"
+                                        COUNTER=$((COUNTER+1))
+                                done
+                        done
+                fi
+
+                ##REMOVE ALL HTML TAGS AND DECODE WHAT EVER HTML ENTITIES YOU NEED TO CHARACTERS
+                sed -i -e 's/<[^>]*>//g' \
+                -e 's/&auml;/ä/g' -e 's/&Auml;/Ä/g' -e 's/&ouml;/ö/g' -e 's/&Ouml;/Ö/g' -e 's/&acute;/-/g' -e 's/&nbsp;/ /g' \
+                -e 's/&quot;/"/g' -e 's/&eacute;/e/g' -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/&/g' -e "s/&apos;/\'/g" \
+                -e 's/&euro;/eur./g' -e 's/&aring;/å/g' -e 's/&Aring;/Å/g' -e 's/&Aacute;/Alk./g' -e 's/&aacute;/alk./g' \
+                -e 's/&rdquo;/"/g' -e 's/&ldquo;/"/g' -e 's/&ndash;/-/g' -e 's/&times;/ x /g' -e 's/&bull;/ -/g' -e "s/\'//g" \
+                -e 's/&oacute;/o/g' "$MESSAGE_CONT"
+
+                KIDNAME=$(grep -o '<a href="/!'"$KIDID"'">.*<' "$MESSAGE" | sed -e 's/<[^>]*>//g' -e 's/<//')
+
+                echo "Päivämäärä: $SENT" > "$MESSAGE"
+                echo "Lähettäjä:  $SENDER" >> "$MESSAGE"
+                echo "" >> "$MESSAGE"
+                echo "Otsikko:    $TOPIC" >> "$MESSAGE"
+                echo "" >> "$MESSAGE"
+                cat "$MESSAGE_CONT" >> "$MESSAGE"
+                mail -s "UUSI WILMAVIESTI $KIDNAME!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$MESSAGE"
+                echo "###   A new message for $KIDNAME, sent to $RECIPIENT...." >> "$WILOG"
+                rm "$MESSAGE" "$MESSAGE_CONT"
+
+                ##WAIT UNTIL PROCESSING NEXT MESSAGE
+                sleep 2
         done
-        ##REMOVE ALL HTML TAGS AND DECODE WHAT EVER HTML ENTITIES YOU NEED TO CHARACTERS
-        sed -i -e 's/<[^>]*>//g' \
-        -e 's/&auml;/ä/g' -e 's/&Auml;/Ä/g' -e 's/&ouml;/ö/g' -e 's/&Ouml;/Ö/g' -e 's/&acute;/-/g' -e 's/&nbsp;/ /g' \
-        -e 's/&quot;/"/g' -e 's/&eacute;/e/g' -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/&/g' -e "s/&apos;/\'/g" \
-        -e 's/&euro;/eur./g' -e 's/&aring;/å/g' -e 's/&Aring;/Å/g' -e 's/&Aacute;/Alk./g' -e 's/&aacute;/alk./g' \
-        -e 's/&rdquo;/"/g' -e 's/&ldquo;/"/g' -e 's/&ndash;/-/g' -e 's/&times;/ x /g' "$MESSAGE_CONT"
-
-        KIDNAME=$(grep -o '<a href="/!'"$KIDID"'">.*<' "$MESSAGE" | sed -e 's/<[^>]*>//g' -e 's/<//')
-
-        echo "Päivämäärä: $SENT" > "$MESSAGE"
-        echo "Lähettäjä:  $SENDER" >> "$MESSAGE"
-        echo "" >> "$MESSAGE"
-        echo "Otsikko:    $TOPIC" >> "$MESSAGE"
-        echo "" >> "$MESSAGE"
-        cat "$MESSAGE_CONT" >> "$MESSAGE"
-        mail -s "UUSI WILMAVIESTI $KIDNAME!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$MESSAGE"
-        echo "###   A new message for $KIDNAME, sent to $RECIPIENT...." >> "$WILOG"
-        rm "$MESSAGE" "$MESSAGE_CONT"
-
-        ##WAIT UNTIL PROCESSING NEXT MESSAGE
-        sleep 2
-  done
 fi
+
 
 ##LOG OUT
 curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/logout' \
@@ -181,7 +231,7 @@ curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/logout' \
   -H 'upgrade-insecure-requests: 1' \
   -H 'origin: https://'"${WILURL}" \
   -H 'content-type: application/x-www-form-urlencoded' \
-  -H 'user-agent: wilKekker' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: same-origin' \
