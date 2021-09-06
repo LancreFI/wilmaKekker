@@ -20,6 +20,9 @@ SENDERADD="some@other.net"
 SENDERNAM="sendername"
 RECIPIENT="other@some.us"
 
+##BROWSER "SETTINGS"
+UAGENT="wilmaKekker v1.0"
+
 TIME=$(date +%d"."%m"."%Y" "%H"."%M)
 
 echo "#####################################################################" >> "$WILOG"
@@ -30,7 +33,7 @@ echo "#####################################################################" >> 
 curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/' \
   -H 'authority: '"${WILURL}" \
   -H 'upgrade-insecure-requests: 1' \
-  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
+  -H 'user-agent: '"${UAGENT}" \
   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: none' \
@@ -50,7 +53,7 @@ curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/login' \
   -H 'upgrade-insecure-requests: 1' \
   -H 'origin: https://'"${WILURL}" \
   -H 'content-type: application/x-www-form-urlencoded' \
-  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
+  -H 'user-agent: '"${UAGENT}" \
   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: same-origin' \
@@ -65,7 +68,11 @@ curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/login' \
   -d 'SESSIONID='"${SESSID}" \
   --compressed > "$TMPF"
 
+##GET THE FORMKEY NEEDED TO LOG OUT
 LOGOUTKEYS=$(grep -o "formkey.*\">" "$TMPF"|sed -e 's/^.*="//' -e 's/">.*$//')
+
+##SAVE THE KID(S) ID(S) AND NAME(S) FROM THE PARENTS FRONT PAGE
+mapfile -t KIDLIST < <(grep "presentation.*\!" "$TMPF"|sed -e 's/^.*\!//' -e 's/">/:/' -e 's/<\/a.*$//')
 
 ##CHECK FOR NEW MESSAGES AND SAVE THE CHILD'S ID IF NEW MESSAGES
 mapfile -t < <(grep "badge-lg" "$TMPF")
@@ -76,12 +83,13 @@ done
 
 rm "$TMPF"
 
+##GET MESSAGE LIST PER KID
 for kid in "${KIDS[@]}"
 do
 curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${kid}"'/messages/list' \
   -H 'authority: '"${WILURL}" \
   -H 'accept: */*' \
-  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
+  -H 'user-agent: '"${UAGENT}" \
   -H 'x-requested-with: XMLHttpRequest' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: same-origin' \
@@ -95,18 +103,38 @@ done
 if [[ -f "$TMPF" ]]
 then
         echo "###   NEW MESSAGES FOUND!" >> "$WILOG"
-        mapfile -t < <(cat -A "$TMPF"|sed -e 's/{"Messages":\[//' -e 's/\}]//g' -e 's/\}/\}\n/g' -e 's/,{/{/g'|grep -o '^.*,"Status":1}$')
+        ##GET THE MESSAGES
+        mapfile -t < <(cat -A "$TMPF"|sed -e 's/{"Messages":\[//' -e 's/\}]//g' -e 's/\}/\}\n/g' -e 's/,{/{/g'|grep -o '^.*,"Status":1')
+
         for row in "${MAPFILE[@]}"
         do
+                ##GET THE MESSAGE ID FOR THE FIRST NEW MESSAGE
                 MSGID=$(echo "$row"|grep -o 'Id":.*"Sub'|sed -e 's/Id"://' -e 's/,.*$//')
-                KIDID=$(echo "$row"|grep -o '\!.*[0-9]\\'|sed -e 's/\!//' -e 's/\\//')
+                ##GET THE CHILD'S ID TO WHOM THE NEW MESSAGE IS FOR
+                mapfile -t KIDID < <(echo "$row"|grep "$MSGID"|grep -Eo '\![0-9]{1,10}'|sed -e 's/\!//')
+                ##IF NO ID IS FOUND (FOR EXAMPLE MESSAGES FROM THE OTHER PARENT TO YOU
+                if [ -z "$KIDID" ]
+                then
+                        ##GET THE CHILD'S NAME
+                        KIDN=$(echo "$row"|grep -Eo "\(.+SenderStu"|sed -e 's/(//' -e 's/, .*$//')
+                        ##FIND THE NAME FROM THE LIST SAVED EARLIER FROM THE PARENT'S FRONTPAGE
+                        for name in "${KIDLIST[@]}"
+                        {
+                                if echo "$name"|grep -q "$KIDN"
+                                then
+                                        ##GET THE ID VIA THE LIST
+                                        KIDID=$(echo "$name"|grep -Eo "^[0-9]{1,10}")
+                                fi
+                        }
+                fi
 
+                ##GET THE MESSAGE
                 curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/messages/'"${MSGID}" \
                   -H 'authority: '"${WILURL}" \
                   -H 'sec-ch-ua: "Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"' \
                   -H 'sec-ch-ua-mobile: ?0' \
                   -H 'upgrade-insecure-requests: 1' \
-                  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36' \
+                  -H 'user-agent: '"${UAGENT}" \
                   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
                   -H 'sec-fetch-site: same-origin' \
                   -H 'sec-fetch-mode: navigate' \
@@ -116,22 +144,44 @@ then
                   -H 'accept-language: en-US,en;q=0.9' \
                   --compressed > "$MESSAGE"
 
+                ##PARSE THE CONTENT
                 ROWS=$(wc -l < "$MESSAGE")
                 SROW=$(grep -n proptable "$MESSAGE"|sed 's/:.*$//')
                 CONTENTSTART=$(grep -n "ckeditor hidden" "$MESSAGE"|sed 's/:.*$//')
 
-                tail -n "$(($ROWS-$CONTENTSTART+1))" "$MESSAGE" > "$TMPF"
-                CONTENTEND=$(grep -m 1 -n "</div>" "$TMPF"|sed 's/:.*$//')
-                head -n"$CONTENTEND" "$TMPF" > "$MESSAGE_CONT"
-                rm "$TMPF"
-                TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//')
+                TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g')
                 SENDERN=$(grep -n "<th>L.*hett" "$MESSAGE"|sed 's/:.*$//')
                 SENDERN=$((SENDERN+4))
                 SENTN=$(grep -n "<th>L.*hetet" "$MESSAGE"|sed 's/:.*$//')
                 SENTN=$((SENTN+1))
 
                 SENT=$(sed "$SENTN"'q;d' "$MESSAGE"|sed -e 's/^.*<td>//' -e 's/<b.*$//')
-                SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//')
+                SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//' -e 's/Ã©/é/g' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g')
+
+                REPLY=0
+
+                ##IF THE NEW MESSAGE IS A REPLY TO AN EARLIER MESSAGE
+                if grep -q "m-replybox" "$MESSAGE"
+                then
+                        REPSTART=$(grep -n "m-replybox" "$MESSAGE"|sed 's/:.*$//')
+                        tail -n "$(($ROWS-$REPSTART+1))" "$MESSAGE" > "$TMPF"
+                        REPEND=$(grep -m 1 -n "</div>" "$TMPF"|sed 's/:.*$//')
+                        head -n"$REPEND" "$TMPF" > "$MESSAGE_CONT"
+                        OTROW=$(($(grep -n "Vastauksia:" "$MESSAGE"|sed 's/:.*$//')-3))
+                        ORIGTIME=$(sed "$OTROW"'q;d' "$MESSAGE")
+                        echo "" >> "$MESSAGE_CONT"
+                        echo "------------------------------" >> "$MESSAGE_CONT"
+                        echo "" >> "$MESSAGE_CONT"
+                        echo "Päivämäärä: $SENT" >> "$MESSAGE_CONT"
+                        echo "Lähettäjä:  $SENDER" >> "$MESSAGE_CONT"
+                        echo "" >> "$MESSAGE_CONT"
+                        REPLY=1
+                fi
+
+                tail -n "$(($ROWS-$CONTENTSTART+1))" "$MESSAGE" > "$TMPF"
+                CONTENTEND=$(grep -m 1 -n "</div>" "$TMPF"|sed 's/:.*$//')
+                head -n"$CONTENTEND" "$TMPF" >> "$MESSAGE_CONT"
+                rm "$TMPF"
 
                 ##Kudos to dsmsk80 @https://unix.stackexchange.com/questions/92447/bash-script-to-get-ascii-values-for-alphabet
                 chr() {
@@ -139,7 +189,7 @@ then
                         printf "\\$(printf '%03o' "$1")"
                 }
 
-                ##GET ALL THE MAIL ADDRESSES FROM THE MESSAGE AND DECODE THEM
+                ##CHECK IF THE MESSAGE CONTAINS ANY MAIL ADDRESSES, GET ALL THE MAIL ADDRESSES FROM THE MESSAGE AND DECODE THEM
                 if grep -q "data-cfemail" "$MESSAGE_CONT"
                 then
                         mapfile -t ENCRYPTED < <(grep -n "data-cfemail=" "$MESSAGE_CONT")
@@ -177,6 +227,7 @@ then
                         done
                 fi
 
+                ##CHECK IF THE MESSAGE CONTAINS ANY LINKS
                 if grep -q "<a href" "$MESSAGE_CONT"
                 then
                         mapfile -t LINKROW < <(grep -n "<a href" "$MESSAGE_CONT")
@@ -204,23 +255,34 @@ then
                 -e 's/&quot;/"/g' -e 's/&eacute;/e/g' -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/&/g' -e "s/&apos;/\'/g" \
                 -e 's/&euro;/eur./g' -e 's/&aring;/å/g' -e 's/&Aring;/Å/g' -e 's/&Aacute;/Alk./g' -e 's/&aacute;/alk./g' \
                 -e 's/&rdquo;/"/g' -e 's/&ldquo;/"/g' -e 's/&ndash;/-/g' -e 's/&times;/ x /g' -e 's/&bull;/ -/g' -e "s/\'//g" \
-                -e 's/&oacute;/o/g' "$MESSAGE_CONT"
+                -e 's/&oacute;/o/g' -e 's/&sect;/§/g' -e 's/&iacute;/i/g' "$MESSAGE_CONT"
 
                 KIDNAME=$(grep -o '<a href="/!'"$KIDID"'">.*<' "$MESSAGE" | sed -e 's/<[^>]*>//g' -e 's/<//')
 
-                echo "Päivämäärä: $SENT" > "$MESSAGE"
-                echo "Lähettäjä:  $SENDER" >> "$MESSAGE"
+                echo "Otsikko:    $TOPIC" > "$MESSAGE"
                 echo "" >> "$MESSAGE"
-                echo "Otsikko:    $TOPIC" >> "$MESSAGE"
-                echo "" >> "$MESSAGE"
-                cat "$MESSAGE_CONT" >> "$MESSAGE"
+
+                if [ "$REPLY" -eq 1 ]
+                then
+                        cat "$MESSAGE_CONT" >> "$MESSAGE"
+                else
+                        echo "Päivämäärä: $SENT" >> "$MESSAGE"
+                        echo "Lähettäjä:  $SENDER" >> "$MESSAGE"
+                        echo "" >> "$MESSAGE"
+                        cat "$MESSAGE_CONT" >> "$MESSAGE"
+                fi
+
                 mail -s "UUSI WILMAVIESTI $KIDNAME!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$MESSAGE"
                 echo "###   A new message for $KIDNAME, sent to $RECIPIENT...." >> "$WILOG"
+
+                ##CLEAN UP OF TEMP FILES
                 rm "$MESSAGE" "$MESSAGE_CONT"
 
                 ##WAIT UNTIL PROCESSING NEXT MESSAGE
                 sleep 2
         done
+else
+        echo "###   NO NEW MESSAGES FOUND!" >> "$WILOG"
 fi
 
 
@@ -231,7 +293,7 @@ curl -b "${COOKIE}" -c "${COOKIE}" -s -iL 'https://'"${WILURL}"'/logout' \
   -H 'upgrade-insecure-requests: 1' \
   -H 'origin: https://'"${WILURL}" \
   -H 'content-type: application/x-www-form-urlencoded' \
-  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36' \
+  -H 'user-agent: '"${UAGENT}" \
   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
   -H 'sec-gpc: 1' \
   -H 'sec-fetch-site: same-origin' \
