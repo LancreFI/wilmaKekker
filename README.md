@@ -1,19 +1,28 @@
 # wilmaKekker
-Check for new Wilma messages and forward them to your email.
+Check for new Wilma messages, homework and upcoming exams and forward them to your email.
 
 Define temp file locations, logfile location (or /dev/null if you don't want logging), the base URL of your Wilma instance, your credentials and the email settings.
 
-Then you just start running the script every time you want to check for new messages in Wilma.
+Then you just start running the script with needed parameters every time you want to check for new messages or homework and exams in Wilma.
 
-If new messages are found, the script will send them to your email.
+If new messages, homework or upcoming exams are found, the script will send them to your email.
 
 Works for accounts with multiple children too.
 
-Just finished this so hasn't been tested that much yet. Also most likely need to add some HTML-entities to the list of entities to decode.
+Just finished this so hasn't been tested that much yet. 
 
 Not much error checking atm. maybe I'll add some later...
 
 I take no responsibility of anything you decide to do with this.
+
+## Call the script with one or more of the following arguments:
+## -h --> get homework and upcoming exams and email them to the recipient
+## -m --> get unread messages and email them to the recipient
+## -n --> NOT YET IMPLEMENTED
+
+</br>
+</br>----</br>
+</br>Update 051021: Recompiled to functions for easier debugging. Added the combined homework and upcoming exams polling. Changed the way of decoding HTML-entities. Now the script needs to be called with arguments!</br>
 </br>
 </br>----</br>
 </br>Update 060921: Added the capability of handling new replies to messages and emailing them too. Fixed a bug when handling messages sent to you by the other parent.</br>
