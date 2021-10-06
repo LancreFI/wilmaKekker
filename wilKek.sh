@@ -284,8 +284,7 @@ getHomework()
         touch "$HWFILE"
         for name in "${KIDLIST[@]}"
         do
-                HCOUNTER=0
-                TCOUNTER=0
+                SCOUNTER=0
                 ##GET THE ID VIA THE LIST
                 KIDID=$(echo "$name"|grep -Eo "^[0-9]{1,10}")
                 KIDNAME=$(echo "$name"|sed -e 's/^.*://')
@@ -320,13 +319,16 @@ getHomework()
 
                         COURSE=$(sed $(($(grep -n "Kurssi<" "$TMPF3"|sed 's/:.*$//')+1))'q;d' "$TMPF3"|sed -e 's/^.*<td>//' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g')
 
+                        ##IF THERE ARE NO TESTS OR HOMEWORK, THEN THESE VARIABLES ARE DEFINED
                         ISTEST=$(grep "lle ei ole merkitty tulevia kokeita" "$TMPF3")
                         ISHW=$(grep "lle ei ole merkitty kotiteht" "$TMPF3")
 
+                        ##IF THE VARIABLE IS NOT DEFINED, THERE ARE UPCOMING TESTS
                         if [ -z "$ISTEST" ]
                         then
                                 TESTSSTR=$(grep -n "Tulevat kokeet" "$TMPF3"|sed 's/:.*$//')
                                 tail -n $(($(wc -l "$TMPF3"|sed 's/ .*$//')-$TESTSSTR)) "$TMPF3" > "$TMPF4"
+
                                 ##THE PAST TESTS ARE NOT DEFINED, IF NO TESTS HAS YET BEEN COMPLETED
                                 ENDFIND=$(grep "Menneet kokeet" "$TMPF4")
                                 if [ -z "$ENDFIND" ]
@@ -335,59 +337,83 @@ getHomework()
                                 else
                                         TESTSER=$(($(grep -n "Menneet kokeet" "$TMPF4"|sed 's/:.*$//')-1))
                                 fi
-                                head -n "$TESTSER" "$TMPF4" > "$TMPF"
-                                mapfile -t TESTSD < <(grep "<td.*\">" "$TMPF2"|sed -e 's/^.*">//' -e 's/<\/.*$//')
-                                mapfile -t TESTS < <(grep "<td>" "$TMPF2"|sed -e 's/^.*<td>[0-9]\{1,2\}:.*$//' -e 's/^.*<td><\/td>.*$//' -e 's/^.*<td>//' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g')
-                                TESTCOUNTER=0
+                                head -n "$TESTSER" "$TMPF4" > "$TMPF2"
 
-                                if [ "$TCOUNTER" -eq 0 ]
+                                ##BECAUSE SHOWING TESTS HELD TODAY IS USELESS
+                                mapfile -t TESTSD < <(grep -v "$(date +%d.%m.%Y)" < <(grep "<td.*\">" "$TMPF2"|sed -e 's/^.*">//' -e 's/<\/.*$//'))
+                                if [ "${#TESTSD[@]}" -gt 0 ]
                                 then
+                                        mapfile -t TESTS < <(grep "<td>" "$TMPF2"|sed -e 's/^.*<td>[0-9]\{1,2\}:.*$//' -e 's/^.*<td><\/td>.*$//' -e 's/^.*<td>//' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g')
+                                        TESTCOUNTER=0
+                                        ##IF THIS IS THE FIRST MATCH FOR THE CHILD
+                                        if [ "$SCOUNTER" -eq 0 ]
+                                        then
+                                                echo " " >> "$HWFILE"
+                                                echo "#########################" >> "$HWFILE"
+                                                echo "# $KIDNAME" >> "$HWFILE"
+                                                echo "#########################" >> "$HWFILE"
+                                                ((SCOUNTER++))
+                                        fi
+
                                         echo " " >> "$HWFILE"
-                                        echo "#########################" >> "$HWFILE"
-                                        echo "# $KIDNAME" >> "$HWFILE"
-                                        echo "#########################" >> "$HWFILE"
-                                        ((TCOUNTER++))
+                                        echo ".-----------------------" >> "$HWFILE"
+                                        echo "| Kurssi: $COURSE" >> "$HWFILE"
+                                        echo ".-----------------------" >> "$HWFILE"
+                                        echo "| !! TULEVIA KOKEITA !!" >> "$HWFILE"
+                                        ##PRINT TEST DATE AND TEST DESCRITPTION
+                                        for testd in "${TESTSD[@]}"
+                                        do
+                                                echo "|      $testd" >> "$HWFILE"
+                                                echo "| ${TESTS[$TESTCOUNTER]} ${TESTS[$TESTCOUNTER+1]} ${TESTS[$TESTCOUNTER+2]}" >> "$HWFILE"
+                                                ((TESTCOUNTER+3))
+                                        done
+                                        echo "'-----------------------" >> "$HWFILE"
+                                else
+                                        ##IF THERE WERE ONLY TESTS MARKED FOR THE CURRENT DATE, THEN WE NEED TO RESET THE VARIABLE
+                                        ISTEST=""
                                 fi
-                                echo " " >> "$HWFILE"
-                                echo ".-----------------------" >> "$HWFILE"
-                                echo "| Kurssi: $COURSE" >> "$HWFILE"
-                                echo ".-----------------------" >> "$HWFILE"
-                                echo "| !! TULEVIA KOKEITA !!" >> "$HWFILE"
-                                for testd in "${TESTSD[@]}"
-                                do
-                                        echo "|      $testd" >> "$HWFILE"
-                                        echo "| ${TESTS[$TESTCOUNTER]} ${TESTS[$TESTCOUNTER+1]} ${TESTS[$TESTCOUNTER+2]}" >> "$HWFILE"
-                                        ((TESTCOUNTER+3))
-                                done
-                                echo "'-----------------------" >> "$HWFILE"
                         fi
 
+                        ##IF THE VARIABLE IS NOT DEFINED, THERE IS HOMEWORK
                         if [ -z "$ISHW" ]
                         then
+                                HCOUNTER=0
                                 HWSROW=$(grep -n "<h3.*Kotiteht" "$TMPF3"|sed 's/:.*$//')
                                 tail -n $(($(wc -l "$TMPF3"|sed 's/ .*$//')-$HWSROW)) "$TMPF3" > "$TMPF4"
-                                HWEROW=$(($(grep -n "<h3.*Tuntip.*kirja" "$TMPF3"|sed 's/:.*$//')-1))
-                                head -n "$HWEROW" "$TMPF4" > "$TMPF2"
+                                HWEROW=$(($(grep -n "<h3.*Tuntip.*kirja" "$TMPF4"|sed 's/:.*$//')-1))
+                                head -n "$HWEROW" "$TMPF4" > "$TMPF3"
                                 mapfile -t HWD < <(grep "<td.*\">" "$TMPF3"|sed -e 's/^.*">//' -e 's/<\/.*$//')
                                 mapfile -t HW < <(grep "<td>" "$TMPF3"|sed -e 's/^.*<td>/Läksy: /' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g')
                                 for date in "${HWD[@]}"
                                 do
+                                        ##IF THE DATE IS TODAY, AS WE ONLY LOOK FOR THE HOMEWORK FOR THE CURRENT DATE
                                         if [ "$(date +%d.%m.%Y)" == "$date" ]
                                         then
+                                                ##IF NO HOMEWORK ROWS HAVE BEEN HANDLED YET
                                                 if [ "$HCOUNTER" -eq 0 ]
                                                 then
+                                                        ##IF THERE WERE NO TESTS FOR THE SUBJECT
                                                         if [ ! -z "$ISTEST" ]
                                                         then
-                                                                echo " " >> "$HWFILE"
-                                                                echo "#########################" >> "$HWFILE"
-                                                                echo "# $KIDNAME" >> "$HWFILE"
-                                                                echo "#########################" >> "$HWFILE"
+                                                                ##IF THIS IS THE FIRST MATCH FOR THE KID
+                                                                if [ "$SCOUNTER" -eq 0 ]
+                                                                then
+                                                                        echo " " >> "$HWFILE"
+                                                                        echo "#########################" >> "$HWFILE"
+                                                                        echo "# $KIDNAME" >> "$HWFILE"
+                                                                        echo "#########################" >> "$HWFILE"
+                                                                        ((SCOUNTER++))
+                                                                fi
+
                                                                 echo " " >> "$HWFILE"
                                                                 echo ".-----------------------" >> "$HWFILE"
                                                                 echo "| Kurssi: $COURSE" >> "$HWFILE"
+                                                                echo ".-----------------------" >> "$HWFILE"
                                                         fi
+                                                        ##PRINT THE DATE FOR THE HOMEWORK ASSIGNMENT
+                                                        echo "| Kotiläksyt $date" >> "$HWFILE"
                                                 fi
-                                                echo "| Kotiläksyt $date" >> "$HWFILE"
+                                                ##PRINT THE HOMEWORK
                                                 echo "|  '----> ${HW[$HCOUNTER]}" >> "$HWFILE"
                                                 ((HCOUNTER++))
                                         fi
