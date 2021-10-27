@@ -219,9 +219,9 @@ getMessages()
                                 done
                                 fi
 
-                ##REMOVE ALL HTML TAGS AND DECODE WHAT EVER HTML ENTITIES YOU NEED TO CHARACTERS
+                        ##REMOVE ALL HTML TAGS AND DECODE WHAT EVER HTML ENTITIES YOU NEED TO CHARACTERS
                         sed -i -e 's/<[^>]*>//g' "$MESSAGE_CONT"
-                        perl -C -MHTML::Entities -pe 'decode_entities($_);' < "$MESSAGE_CONT" > "$TMPF"
+                        perl -C -MHTML::Entities -pe 'decode_entities($_);' < "$MESSAGE_CONT"  | sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã/Ö/g' > "$TMPF"
                         mv "$TMPF" "$MESSAGE_CONT"
 
                         KIDNAME=$(grep -o '<a href="/!'"$KIDID"'">.*<' "$MESSAGE" | sed -e 's/<[^>]*>//g' -e 's/<//')
