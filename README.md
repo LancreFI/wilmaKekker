@@ -22,6 +22,9 @@ I take no responsibility of anything you decide to do with this.
 
 </br>
 </br>----</br>
+</br>Update 070122: Updated the message content sanitation to remove wide character dash.</br>
+</br>
+</br>----</br>
 </br>Update 051021: Recompiled to functions for easier debugging. Added the combined homework and upcoming exams polling. Changed the way of decoding HTML-entities. Now the script needs to be called with arguments!</br>
 </br>
 </br>----</br>
@@ -34,6 +37,7 @@ I take no responsibility of anything you decide to do with this.
 </br>
 Todo: </br>
     - Also email all notifications and notes from the teachers.</br>
+    - Remove all weird characters from the content smarter, at the moment this is just a bundle of randomness. </br>
     - Something something, dumpster fire.</br>
 </br>
 #####################################</br>
