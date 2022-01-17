@@ -210,18 +210,30 @@ getMessages()
                                         mapfile -t LINKTXT < <(sed "$ROW""q;d" "$MESSAGE_CONT"|grep -Po "<a href=.+?(?=<\/a>)"|sed -e 's/<a href=.*">//' -e 's/<.*$//')
                                         for lin in "${LINKTXT[@]}"
                                         do
-                                                REPL="$lin ${LINK[$COUNTER]}"
+                                                if [[ "$lin" == "${LINK[$COUNTER]}" ]]
+                                                then
+                                                        REPL="$lin"
+                                                else
+                                                        REPL="$lin ${LINK[$COUNTER]}"
+                                                fi
+                                                
                                                 ##NEED TO ESCAPE ALL SPECIAL CHARACTERS, OTHERWISE SED WILL TRY TO INTERPRET THEM
                                                 REP=$(echo -e "$REPL" | sed -e 's/\//\\\//g' -e 's/\./\\\./g' -e 's/\&/\\\&/g' -e 's/\$/\\\$/g' -e 's/\%/\\\%/g' -e 's/\?/\\\?/g' -e 's/\!/\\\!/g' -e 's/\*/\\\*/g')
-                                                sed -i "$ROW"'s|<a href="'"${LINK[$COUNTER]}"'">'"$lin"'<\/a>|'"$REP"'|' "$MESSAGE_CONT"
+                                                if [[ "${LINK[$COUNTER]}" == "#OnlyHTTPAndHTTPSAllowed" ]]
+                                                then
+                                                        sed -i "$ROW"'s|<a href="'"${LINK[$COUNTER]}"'">'"$lin"'<\/a>|'"$lin"'|' "$MESSAGE_CONT"
+                                                else
+                                                        sed -i "$ROW"'s|<a href="'"${LINK[$COUNTER]}"'">'"$lin"'<\/a>|'"$REP"'|' "$MESSAGE_CONT"
+                                                fi
+
                                                 COUNTER=$((COUNTER+1))
                                         done
                                 done
-                                fi
+                        fi
 
                         ##REMOVE ALL HTML TAGS AND DECODE WHAT EVER HTML ENTITIES YOU NEED TO CHARACTERS
                         sed -i -e 's/<[^>]*>//g' "$MESSAGE_CONT"
-                        perl -C -MHTML::Entities -Mutf8 -CS -pe 'decode_entities($_);' < "$MESSAGE_CONT"  | sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' > "$TMPF"
+                        perl -C -MHTML::Entities -Mutf8 -CS -pe 'decode_entities($_);' < "$MESSAGE_CONT" | sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g' > "$TMPF"
                         mv "$TMPF" "$MESSAGE_CONT"
 
                         KIDNAME=$(grep -o '<a href="/!'"$KIDID"'">.*<' "$MESSAGE" | sed -e 's/<[^>]*>//g' -e 's/<//')
@@ -383,7 +395,7 @@ getHomework()
                                 HWEROW=$(($(grep -n "<h3.*Tuntip.*kirja" "$TMPF4"|sed 's/:.*$//')-1))
                                 head -n "$HWEROW" "$TMPF4" > "$TMPF3"
                                 mapfile -t HWD < <(grep "<td.*\">" "$TMPF3"|sed -e 's/^.*">//' -e 's/<\/.*$//')
-                                mapfile -t HW < <(grep "<td>" "$TMPF3"|sed -e 's/^.*<td>/Läksy: /' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g')
+                                mapfile -t HW < <(grep "<td>" "$TMPF3"|sed -e 's/^.*<td>/Läksy: /' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g'|perl -C -MHTML::Entities -pe 'decode_entities($_);')
                                 for date in "${HWD[@]}"
                                 do
                                         ##IF THE DATE IS TODAY, AS WE ONLY LOOK FOR THE HOMEWORK FOR THE CURRENT DATE
@@ -416,6 +428,7 @@ getHomework()
                                                 ##PRINT THE HOMEWORK
                                                 echo "|  '----> ${HW[$HCOUNTER]}" >> "$HWFILE"
                                                 ((HCOUNTER++))
+                                                echo "'-----------------------" >> "$HWFILE"
                                         fi
                                 done
                                 rm "$TMPF3" "$TMPF4"
