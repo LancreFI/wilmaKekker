@@ -120,14 +120,14 @@ getMessages()
                         SROW=$(grep -n proptable "$MESSAGE"|sed 's/:.*$//')
                         CONTENTSTART=$(grep -n "ckeditor hidden" "$MESSAGE"|sed 's/:.*$//')
 
-                        TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g'|sed -e 's/Ã/Ö/g')
+                        TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
                         SENDERN=$(grep -n "<th>L.*hett" "$MESSAGE"|sed 's/:.*$//')
                         SENDERN=$((SENDERN+4))
                         SENTN=$(grep -n "<th>L.*hetet" "$MESSAGE"|sed 's/:.*$//')
                         SENTN=$((SENTN+1))
 
                         SENT=$(sed "$SENTN"'q;d' "$MESSAGE"|sed -e 's/^.*<td>//' -e 's/<b.*$//')
-                        SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//' -e 's/Ã©/é/g' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g'|sed -e 's/Ã/Ö/g')
+                        SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
 
                         REPLY=0
 
