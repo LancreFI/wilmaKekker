@@ -253,8 +253,8 @@ getMessages()
 
                         mail -s "UUSI WILMAVIESTI $KIDNAME!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$MESSAGE"
                         echo "###   A new message for $KIDNAME, sent to $RECIPIENT...." >> "$WILOG"
-                        rm "$MESSAGE" "$MESSAGE_CONT" "$TMPF"
-
+                        rm "$MESSAGE" "$MESSAGE_CONT"
+                        
                         ##WAIT UNTIL PROCESSING NEXT MESSAGE
                         sleep 2
                 done
