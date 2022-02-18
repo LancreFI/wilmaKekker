@@ -18,8 +18,12 @@ I take no responsibility of anything you decide to do with this.
 ## Call the script with one or more of the following arguments:
 ## -h --> get homework and upcoming exams and email them to the recipient
 ## -m --> get unread messages and email them to the recipient
-## -n --> NOT YET IMPLEMENTED
+## -no --> get the teacher's notes for the current date
 
+</br>
+</br>----</br>
+</br>Update 180222: Added the functionality of getting teacher's notes for the current day, provided the teacher has filled them in. If you call this twice in the same day it will give you the results you got on the earlier run that day + possible new notes. So it's not keeping track of what it's already sent you. I've put this on Cron to be run once a day at 16:00. Usage: bash wilKek.sh -no.</br></br>
+Also fixed a brain fart in the homework and tests -handling.</br>
 </br>
 </br>----</br>
 </br>Update 070122: Updated the message content sanitation to remove wide character dash.</br>
