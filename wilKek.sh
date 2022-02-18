@@ -1,9 +1,9 @@
 #!/bin/bash
 ###
 ## Call the script with one or more of the following arguments:
-## -h --> get homework and upcoming exams and email them to the recipient
-## -m --> get unread messages and email them to the recipient
-## -n --> NOT YET IMPLEMENTED
+## -h  --> get homework and upcoming exams and email them to the recipient
+## -m  --> get unread messages and email them to the recipient
+## -no --> get the teacher's notes for the current date
 ###
 ##TEMP FILES
 COOKIE="/home/user/wilmaKekker/wilKeksi"
