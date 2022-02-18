@@ -624,7 +624,7 @@ else
         for arg in "$@"
         do
                 ##CHECKING FOR VALID ARGUMENTS
-                if [ "$arg" != "-m" ] && [ "$arg" != "-n" ] && [ "$arg" != "-h" ]
+                if [ "$arg" != "-m" ] && [ "$arg" != "-no" ] && [ "$arg" != "-h" ]
                 then
                         echo "Unknown argument $arg!"
                         if [ -f "$WILARGS" ]
