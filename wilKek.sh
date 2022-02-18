@@ -12,6 +12,7 @@ TMPF2="/home/user/wilmaKekker/wilTemp2"
 TMPF3="/home/user/wilmaKekker/wilTemp3"
 TMPF4="/home/user/wilmaKekker/wilTemp4"
 HWFILE="/home/user/wilmaKekker/wilHw"
+NOTEFILE="/home/user/wilmaKekker/wilNts"
 MESSAGE="/home/user/wilmaKekker/MESSAGE"
 MESSAGE_CONT="/home/user/wilmaKekker/MESSAGE_CONT"
 WILARGS="/home/user/wilmaKekker/wilArgs_temp"
@@ -32,7 +33,7 @@ SENDERNAM="sendername"
 RECIPIENT="other@some.us"
 
 ##BROWSER "SETTINGS"
-UAGENT="wilmaKekker v2.0"
+UAGENT="wilmaKekker v3.0"
 
 ##OTHER
 TIME=$(date +%d"."%m"."%Y" "%H"."%M)
@@ -269,22 +270,97 @@ getNotes()
         echo "#####################################################################" >> "$WILOG"
         echo "###         $TIME CHECKING FOR NEW NOTES...            ###" >> "$WILOG"
         echo "#####################################################################" >> "$WILOG"
+        touch "$NOTEFILE"
 
-        ##GET THE TEACHER'S NOTES
-        curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/attendance/view' \
-          -H 'authority: '"${WILURL}" \
-          -H 'upgrade-insecure-requests: 1' \
-          -H 'user-agent: '"${UAGENT}" \
-          -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
-          -H 'sec-gpc: 1' \
-          -H 'sec-fetch-site: same-origin' \
-          -H 'sec-fetch-mode: navigate' \
-          -H 'sec-fetch-user: ?1' \
-          -H 'sec-fetch-dest: document' \
-          -H $'referer: '"${WILURL}"'/!'"${KIDID}"'/attendance' \
-          -H 'accept-language: en-US,en;q=0.9' \
-          --compressed > "$TMPF2"
-        rm "$TMPF2"
+        NTFDATE=$(date +%-d.%-m.%Y)
+        
+        for name in "${KIDLIST[@]}"
+        do
+                ##GET THE ID VIA THE LIST
+                KIDID=$(echo "$name"|grep -Eo "^[0-9]{1,10}")
+                KIDNAME=$(echo "$name"|sed -e 's/^.*://')
+                NSUBR="0"
+
+                ##GET THE COURSE NAMES FROM THE STUDENT'S FRONTPAGE
+                curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/' \
+                  -H 'authority: '"${WILURL}" \
+                  -H 'upgrade-insecure-requests: 1' \
+                  -H 'user-agent: '"${UAGENT}" \
+                  -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
+                  -H 'sec-gpc: 1' \
+                  -H 'sec-fetch-site: same-origin' \
+                  -H 'sec-fetch-mode: navigate' \
+                  -H 'sec-fetch-user: ?1' \
+                  -H 'sec-fetch-dest: document' \
+                  -H $'referer: '"${WILURL}"'/' \
+                  -H 'accept-language: en-US,en;q=0.9' \
+                  --compressed > "$TMPF2"
+
+                ##GET THE TEACHER'S NOTES
+                curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/attendance/view' \
+                  -H 'authority: '"${WILURL}" \
+                  -H 'upgrade-insecure-requests: 1' \
+                  -H 'user-agent: '"${UAGENT}" \
+                  -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
+                  -H 'sec-gpc: 1' \
+                  -H 'sec-fetch-site: same-origin' \
+                  -H 'sec-fetch-mode: navigate' \
+                  -H 'sec-fetch-user: ?1' \
+                  -H 'sec-fetch-dest: document' \
+                  -H $'referer: '"${WILURL}"'/!'"${KIDID}"'/attendance' \
+                  -H 'accept-language: en-US,en;q=0.9' \
+                  --compressed > "$TMPF3"
+
+                ##GREP FOR NEW NOTES BY DATE
+                NTFSROW=$(grep -n "<td align=\"right\">$NTFDATE" "$TMPF3"|sed 's/: .*$//')
+
+                ##IF NOTES ARE FOUND FOR THE DATE SEARCHED
+                if [ "$NTFSROW" ]
+                then
+                        echo ".----------------------------------------" > "$NOTEFILE"
+                        echo "| $KIDNAME's notes for $NTFDATE:" >> "$NOTEFILE"
+                        echo "|----------------------------------------" >> "$NOTEFILE"
+
+                        NTFEROW="$NTFSROW"
+
+                        ##HANDLE ROW BY ROW UNTIL THE CURRENT ROW'S END TAG IS REACHED
+                        until [ $(sed "$NTFEROW""q;d" "$TMPF3"|grep -o "</tr") ]
+                        do
+                                ##GET THE NOTE
+                                NOTE=$(sed "$NTFEROW""q;d" "$TMPF3"|grep "<td class=\"event"|sed -e 's/^.*title="//' -e 's/">/ (/' -e 's/<\/td.*$/)/' -e 's/<sup.*<\/sup>//'|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e $
+                                ##IF THE NOTE HAS ACTUAL CONTENT
+                                if [ "$NOTE" ]
+                                then
+                                        ##GET THE SUBJECT'S NAME
+                                        NSUB=$(grep -oP -m1 "^(.*?);" < <(echo "$NOTE")|sed -e 's/;//')
+
+                                        ##GET THE ROW CONTAINING THE SUBJECT'S DESCRIPTION
+                                        NSUBR=$(grep -n "$NSUB" "$TMPF2"|sed 's/: .*$//')
+
+                                        ##IF THE SUBJECT'S NAME HAS BEEN DEFINED (NSUBR IS NOT DEFINED, IF THE DESC WASN'T FOUND ON THE FRONTPAGE OF THE CHILD)
+                                        if [ "$NSUB" ] && [ "$NSUBR" ]
+                                        then
+                                                ((NSUBR=NSUBR+1))
+                                                ##GET THE SUBJECT DESCRIPTION
+                                                NSUBN=$(sed "$NSUBR""q;d" "$TMPF2"|sed -e 's/^.*>: //' -e 's/ &#160.*$//')
+                                                ##REPLACE THE SUBJECT'S NAME WITH BOTH THE NAME AND THE DESCRIPTION
+                                                NOTEF=$(echo "$NOTE"|sed "s/$NSUB/$NSUB: $NSUBN/")
+                                                ##FORM THE FINAL NOTE
+                                                NOTE=$(echo "$NOTEF"|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
+                                        fi
+                                echo "  $NOTE" >> "$NOTEFILE"
+                                fi
+                                ((NTFEROW=NTFEROW+1))
+                        done;
+                        
+                        echo "'----------------------------------------" >> "$NOTEFILE"
+                        mail -s "$(date +%d.%m.%Y) TUNTIMERKINNÄT!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$NOTEFILE"
+                        echo "###   $(date +%d.%m.%Y) notes for $KIDNAME sent to $RECIPIENT...." >> "$WILOG"
+
+                        ##REMOVE TEMP FILES
+                        rm "$TMPF2" "$TMPF3" "$NOTEFILE"
+                fi
+        done
 }
 
 ##HOMEWORK FUNCTION
@@ -381,8 +457,8 @@ getHomework()
                                         done
                                         echo "'-----------------------" >> "$HWFILE"
                                 else
-                                        ##IF THERE WERE ONLY TESTS MARKED FOR THE CURRENT DATE, THEN WE NEED TO RESET THE VARIABLE
-                                        ISTEST=""
+                                        ##IF THERE WERE ONLY TESTS MARKED FOR THE CURRENT DATE, THEN WE NEED TO DEFINE THE VARIABLE
+                                        ISTEST="DEFINED"
                                 fi
                         fi
 
@@ -497,7 +573,7 @@ startMain()
                 if [ "$arg" = "-m" ]
                 then
                         getMessages
-                elif [ "$arg" = "-n" ]
+                elif [ "$arg" = "-no" ]
                 then
                         getNotes
                 elif [ "$arg" = "-h" ]
