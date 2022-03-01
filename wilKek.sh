@@ -121,14 +121,14 @@ getMessages()
                         SROW=$(grep -n proptable "$MESSAGE"|sed 's/:.*$//')
                         CONTENTSTART=$(grep -n "ckeditor hidden" "$MESSAGE"|sed 's/:.*$//')
 
-                        TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
+                        TOPIC=$(grep "<h1>" "$MESSAGE"|sed -e 's/<h1>//' -e 's/<\/h1>//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
                         SENDERN=$(grep -n "<th>L.*hett" "$MESSAGE"|sed 's/:.*$//')
                         SENDERN=$((SENDERN+4))
                         SENTN=$(grep -n "<th>L.*hetet" "$MESSAGE"|sed 's/:.*$//')
                         SENTN=$((SENTN+1))
 
                         SENT=$(sed "$SENTN"'q;d' "$MESSAGE"|sed -e 's/^.*<td>//' -e 's/<b.*$//')
-                        SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
+                        SENDER=$(sed "$SENDERN"'q;d' "$MESSAGE"|sed -e 's/^.*">//' -e 's/<.*$//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
 
                         REPLY=0
 
@@ -234,7 +234,7 @@ getMessages()
 
                         ##REMOVE ALL HTML TAGS AND DECODE WHAT EVER HTML ENTITIES YOU NEED TO CHARACTERS
                         sed -i -e 's/<[^>]*>//g' "$MESSAGE_CONT"
-                        perl -C -MHTML::Entities -Mutf8 -CS -pe 'decode_entities($_);' < "$MESSAGE_CONT" | sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g' > "$TMPF"
+                        perl -C -MHTML::Entities -Mutf8 -CS -pe 'decode_entities($_);' < "$MESSAGE_CONT" | sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g' > "$TMPF"
                         mv "$TMPF" "$MESSAGE_CONT"
 
                         KIDNAME=$(grep -o '<a href="/!'"$KIDID"'">.*<' "$MESSAGE" | sed -e 's/<[^>]*>//g' -e 's/<//')
@@ -327,7 +327,7 @@ getNotes()
                         until [ $(sed "$NTFEROW""q;d" "$TMPF3"|grep -o "</tr") ]
                         do
                                 ##GET THE NOTE
-                                NOTE=$(sed "$NTFEROW""q;d" "$TMPF3"|grep "<td class=\"event"|sed -e 's/^.*title="//' -e 's/">/ (/' -e 's/<\/td.*$/)/' -e 's/<sup.*<\/sup>//'|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e $
+                                NOTE=$(sed "$NTFEROW""q;d" "$TMPF3"|grep "<td class=\"event"|sed -e 's/^.*title="//' -e 's/">/ (/' -e 's/<\/td.*$/)/' -e 's/<sup.*<\/sup>//'|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
                                 ##IF THE NOTE HAS ACTUAL CONTENT
                                 if [ "$NOTE" ]
                                 then
@@ -346,7 +346,7 @@ getNotes()
                                                 ##REPLACE THE SUBJECT'S NAME WITH BOTH THE NAME AND THE DESCRIPTION
                                                 NOTEF=$(echo "$NOTE"|sed "s/$NSUB/$NSUB: $NSUBN/")
                                                 ##FORM THE FINAL NOTE
-                                                NOTE=$(echo "$NOTEF"|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
+                                                NOTE=$(echo "$NOTEF"|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
                                         fi
                                 echo "  $NOTE" >> "$NOTEFILE"
                                 fi
@@ -431,7 +431,7 @@ getHomework()
                                 mapfile -t TESTSD < <(grep -v "$(date +%d.%m.%Y)" < <(grep "<td.*\">" "$TMPF2"|sed -e 's/^.*">//' -e 's/<\/.*$//'))
                                 if [ "${#TESTSD[@]}" -gt 0 ]
                                 then
-                                        mapfile -t TESTS < <(grep "<td>" "$TMPF2"|sed -e 's/^.*<td>[0-9]\{1,2\}:.*$//' -e 's/^.*<td><\/td>.*$//' -e 's/^.*<td>//' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g')
+                                        mapfile -t TESTS < <(grep "<td>" "$TMPF2"|sed -e 's/^.*<td>[0-9]\{1,2\}:.*$//' -e 's/^.*<td><\/td>.*$//' -e 's/^.*<td>//' -e 's/<\/td.*$//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g'|perl -C -MHTML::Entities -pe 'decode_entities($_);')
                                         TESTCOUNTER=0
                                         ##IF THIS IS THE FIRST MATCH FOR THE CHILD
                                         if [ "$SCOUNTER" -eq 0 ]
@@ -471,7 +471,7 @@ getHomework()
                                 HWEROW=$(($(grep -n "<h3.*Tuntip.*kirja" "$TMPF4"|sed 's/:.*$//')-1))
                                 head -n "$HWEROW" "$TMPF4" > "$TMPF3"
                                 mapfile -t HWD < <(grep "<td.*\">" "$TMPF3"|sed -e 's/^.*">//' -e 's/<\/.*$//')
-                                mapfile -t HW < <(grep "<td>" "$TMPF3"|sed -e 's/^.*<td>/Läksy: /' -e 's/<\/td.*$//' -e 's/Ã¶/ö/g' -e 's/Ã€/ä/g' -e 's/Ã¥/å/g'|sed -e 's/Ã/Ö/g'|perl -C -MHTML::Entities -pe 'decode_entities($_);')
+                                mapfile -t HW < <(grep "<td>" "$TMPF3"|sed -e 's/^.*<td>/Läksy: /' -e 's/<\/td.*$//' -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g'|perl -C -MHTML::Entities -pe 'decode_entities($_);')
                                 for date in "${HWD[@]}"
                                 do
                                         ##IF THE DATE IS TODAY, AS WE ONLY LOOK FOR THE HOMEWORK FOR THE CURRENT DATE
