@@ -297,7 +297,7 @@ getNotes()
                   --compressed > "$TMPF2"
 
                 ##GET THE TEACHER'S NOTES
-                curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/attendance/view' \
+                curl -b "${COOKIE}" -c "${COOKIE}" -s -iL $'https://'"${WILURL}"'/!'"${KIDID}"'/attendance/view?range=0' \
                   -H 'authority: '"${WILURL}" \
                   -H 'upgrade-insecure-requests: 1' \
                   -H 'user-agent: '"${UAGENT}" \
