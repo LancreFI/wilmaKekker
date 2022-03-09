@@ -315,7 +315,7 @@ getNotes()
                 NTFSROW=$(grep -n "<td align=\"right\">$NTFDATE" "$TMPF3"|sed 's/: .*$//')
 
                 ##IF NOTES ARE FOUND FOR THE DATE SEARCHED
-                if [ "$NTFSROW" ]
+                if [ ! -z "$NTFSROW" ]
                 then
                         echo ".----------------------------------------" > "$NOTEFILE"
                         echo "| $KIDNAME's notes for $NTFDATE:" >> "$NOTEFILE"
@@ -329,16 +329,16 @@ getNotes()
                                 ##GET THE NOTE
                                 NOTE=$(sed "$NTFEROW""q;d" "$TMPF3"|grep "<td class=\"event"|sed -e 's/^.*title="//' -e 's/">/ (/' -e 's/<\/td.*$/)/' -e 's/<sup.*<\/sup>//'|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
                                 ##IF THE NOTE HAS ACTUAL CONTENT
-                                if [ "$NOTE" ]
+                                if [ ! -z "$NOTE" ]
                                 then
                                         ##GET THE SUBJECT'S NAME
                                         NSUB=$(grep -oP -m1 "^(.*?);" < <(echo "$NOTE")|sed -e 's/;//')
 
-                                        ##GET THE ROW CONTAINING THE SUBJECT'S DESCRIPTION
-                                        NSUBR=$(grep -n "$NSUB" "$TMPF2"|sed 's/: .*$//')
+                                        ##GET THE FIRST ROW CONTAINING THE SUBJECT'S DESCRIPTION
+                                        NSUBR=$(grep -n -m1 "$NSUB" "$TMPF2"|sed 's/: .*$//')
 
                                         ##IF THE SUBJECT'S NAME HAS BEEN DEFINED (NSUBR IS NOT DEFINED, IF THE DESC WASN'T FOUND ON THE FRONTPAGE OF THE CHILD)
-                                        if [ "$NSUB" ] && [ "$NSUBR" ]
+                                        if [ ! -z "$NSUB" ] && [ ! -z "$NSUBR" ]
                                         then
                                                 ((NSUBR=NSUBR+1))
                                                 ##GET THE SUBJECT DESCRIPTION
@@ -347,6 +347,9 @@ getNotes()
                                                 NOTEF=$(echo "$NOTE"|sed "s/$NSUB/$NSUB: $NSUBN/")
                                                 ##FORM THE FINAL NOTE
                                                 NOTE=$(echo "$NOTEF"|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
+                                        ##IF THE SUBJECT'S NAME HASN'T BEEN DEFINED FOR THE NOTIFICATION
+                                        else
+                                                NOTE=$(echo "$NOTE"|sed -e 's/Ã€/ä/g' -e 's/Ã¶/ö/g' -e 's/Ã©/é/g' -e 's/Ã¥/å/g' -e 's/â\x80\x8b//g' -e 's/â/-/g' -e 's/Ã\x84/Ä/g' -e 's/Ã/Ö/g' -e 's/\x80//g' -e 's/\x93//g' -e 's/Â//g' -e 's/¯//g')
                                         fi
                                 echo "  $NOTE" >> "$NOTEFILE"
                                 fi
