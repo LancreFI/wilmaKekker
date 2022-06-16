@@ -514,10 +514,15 @@ getHomework()
                         fi
                 done
         done
-
-        mail -s "$(date +%d.%m.%Y) KOTILÄKSYT!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$HWFILE"
-        echo "###   $(date +%d.%m.%Y) homework sent to $RECIPIENT...." >> "$WILOG"
-        rm "$TMPF2" "$HWFILE"
+        
+        ##IF HWFILE IS NOT EMPTY, WE ACTUALLY HAVE SOMETHING TO SEND, OTHERWISE WOULD SEND EMPTY MAIL
+        if [ $(wc -l "${HWFILE}" | cut -c 1) -gt 0 ]
+        then
+                mail -s "$(date +%d.%m.%Y) KOTILÄKSYT!" -aFrom:"$SENDERNAM"\<"$SENDERADD"\> "$RECIPIENT" < "$HWFILE"
+                echo "###   $(date +%d.%m.%Y) homework sent to $RECIPIENT...." >> "$WILOG"
+                rm "${TMPF2}"
+        fi
+        rm "$HWFILE"
 }
 
 ##MAIN FUNCTION
