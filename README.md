@@ -1,3 +1,5 @@
+[BROKEN, WILL MAYBE FIX ONE DAY IF I HAVE TOO MUCH TIME ON MY HANDS]
+
 # wilmaKekker
 Check for new Wilma messages, homework and upcoming exams and forward them to your email.
 
