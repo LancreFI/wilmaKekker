@@ -84,6 +84,14 @@ class wilma_session:
         wilma.guardian_json = wilma.guardian_response.json()
         return (wilma.guardian_json['payload'])
 
+    
+    def get_schedule(wilma, user_slug, user_id, schedule_date=False):
+        if schedule_date:
+            wilma.schedule_response = wilma.session.get(f"{wilma_url}/{user_slug}/schedule?date={schedule_date}&format=json")
+        else:
+            wilma.schedule_response = wilma.session.get(f"{wilma_url}/{user_slug}/schedule?format=json")
+        return (wilma.schedule_response.text.split('var eventsJSON = ')[1].split(';',1)[0])
+
 
 ##MAIN
 if __name__ == '__main__':
@@ -123,6 +131,11 @@ if __name__ == '__main__':
         parser.add_argument('--info',
             help='Use this argument if you want to view the guardian info',
             action='store_true')
+        parser.add_argument('--schedule',
+            help="Use this argument if you want to view the student's schedule",
+            action='store_true')
+        parser.add_argument('--date',
+            help='Use this subargument to define a specific schedule date')
         args = parser.parse_args()
 
         print (f"\n{color.gre}Starting Wilma poller...{color.rst}")
@@ -142,6 +155,17 @@ if __name__ == '__main__':
         if args.info:
             guardian_info = poller_session.get_guardianinfo()
             print (guardian_info)
+
+        """ STILL WORK IN PROGRESS, NEEDS TO GET THE SLUG AND USER ID
+        if args.schedule:
+            schedule_date = False
+            if args.date:
+                schedule_date = args.date
+            slug = ''
+            user_id = ''
+            schedule = poller_session.get_schedule(slug, user_id, schedule_date)
+            print (schedule)
+        """
 
         poller_session.logout()
 
