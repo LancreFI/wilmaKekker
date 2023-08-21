@@ -2,7 +2,7 @@
 
 Flushed the old one as it broke on some Wilma update and to be honest, bash is a bit ... clumsy for this kind of things, though still love it <3
 
-This is still very much work in progress, but some basic classes at least to get started with :)
+This is still very much work in progress, but some basic class and functions at least to get started with :)
 
 REQUIRES: python3 and some modules you can see in the source.
 
