@@ -84,7 +84,12 @@ class wilma_session:
         wilma.guardian_json = wilma.guardian_response.json()
         return (wilma.guardian_json['payload'])
 
-    
+    def get_messages(wilma, user_slug, user_id):
+        wilma.messages_response = wilma.session.get(f"{wilma_url}/{user_slug}/messages/list")
+        wilma.messages_json = wilma.messages_response.json()
+        ##NEED TO FIGURE OUT A PROPER WAY TO HANDLE UMLAUTS IN DATA....
+        return wilma.messages_response.json()
+        
     def get_schedule(wilma, user_slug, user_id, schedule_date=False):
         if schedule_date:
             wilma.schedule_response = wilma.session.get(f"{wilma_url}/{user_slug}/schedule?date={schedule_date}&format=json")
@@ -136,6 +141,9 @@ if __name__ == '__main__':
             action='store_true')
         parser.add_argument('--date',
             help='Use this subargument to define a specific schedule date')
+        parser.add_argument('--messages',
+            help='Use this argument to get the messages for the user',
+            action='store_true')        
         args = parser.parse_args()
 
         print (f"\n{color.gre}Starting Wilma poller...{color.rst}")
@@ -156,17 +164,15 @@ if __name__ == '__main__':
             guardian_info = poller_session.get_guardianinfo()
             print (guardian_info)
 
-        """ STILL WORK IN PROGRESS, NEEDS TO GET THE SLUG AND USER ID
         if args.schedule:
             schedule_date = False
             if args.date:
                 schedule_date = args.date
-            slug = ''
-            user_id = ''
             schedule = poller_session.get_schedule(slug, user_id, schedule_date)
-            print (schedule)
-        """
 
+        if args.messages:
+            messages = poller_session.get_messages(slug, user_id)
+            
         poller_session.logout()
 
     except Exception as err:
