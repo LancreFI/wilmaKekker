@@ -14,6 +14,10 @@ I take no responsibility of anything you decide to do with this.
 ## --info --> get the guardian (whoever's credentials are being used) info
 ## --roles --> get the roles assigned to the credentials
 ## --lastlogin --> get the last login timestamp for the credentials being used
+## --schedule --> get the ongoin weeks schedule for the specified kid
+## --date --> use more precise date to get that weeks schedule
+## --messages --> get the messages for the kid
+## --unread --> only get the unread messages
 
 All results are returned in a kind of dict form of the information.
 
