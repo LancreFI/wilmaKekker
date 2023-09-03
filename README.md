@@ -16,7 +16,7 @@ I take no responsibility of anything you decide to do with this.
 ## --lastlogin --> get the last login timestamp for the credentials being used
 ## --schedule --> get the ongoin weeks schedule for the specified kid
 ## --date --> use more precise date to get that weeks schedule
-## --messages --> get the messages for the kid
+## --messages --> get messages for the kid on a date, content, sender -level, not full content yet
 ## --unread --> only get the unread messages
 
 All results are returned in a kind of dict form of the information.
