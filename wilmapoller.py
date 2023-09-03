@@ -1,5 +1,5 @@
 # coding=iso-8859-15
-import requests, re, argparse, click, sys, urllib.parse
+import requests, re, argparse, click, sys, urllib.parse, json
 from argparse import RawTextHelpFormatter
 from getpass import getpass
 
@@ -60,6 +60,7 @@ class wilma_session:
 
     def get_roles(wilma):
         wilma.roles_response = wilma.session.get(f"{wilma_url}/api/v1/accounts/me/roles")
+        wilma.roles_response.encoding = 'iso-8859-15'
         wilma.roles = wilma.roles_response.json()
         wilma.users = {}
         for user in wilma.roles['payload']:
@@ -81,21 +82,25 @@ class wilma_session:
 
     def get_guardianinfo(wilma):
         wilma.guardian_response = wilma.session.get(f"{wilma_url}/api/v1/accounts/me")
+        wilma.guardian_response.encoding = 'iso-8859-15'
         wilma.guardian_json = wilma.guardian_response.json()
         return (wilma.guardian_json['payload'])
 
-    def get_messages(wilma, user_slug, user_id):
-        wilma.messages_response = wilma.session.get(f"{wilma_url}/{user_slug}/messages/list")
-        wilma.messages_json = wilma.messages_response.json()
-        ##NEED TO FIGURE OUT A PROPER WAY TO HANDLE UMLAUTS IN DATA....
-        return wilma.messages_response.json()
-        
+    
     def get_schedule(wilma, user_slug, user_id, schedule_date=False):
         if schedule_date:
             wilma.schedule_response = wilma.session.get(f"{wilma_url}/{user_slug}/schedule?date={schedule_date}&format=json")
         else:
             wilma.schedule_response = wilma.session.get(f"{wilma_url}/{user_slug}/schedule?format=json")
+        wilma.schedule_response.encoding = 'iso-8859-15'
         return (wilma.schedule_response.text.split('var eventsJSON = ')[1].split(';',1)[0])
+
+
+    def get_messages(wilma, user_slug, user_id):
+        wilma.messages_response = wilma.session.get(f"{wilma_url}/{user_slug}/messages/list")
+        wilma.messages_response.encoding = 'iso-8859-15'
+        wilma.messages_json = wilma.messages_response.json()
+        return (wilma.messages_json)
 
 
 ##MAIN
@@ -143,14 +148,20 @@ if __name__ == '__main__':
             help='Use this subargument to define a specific schedule date')
         parser.add_argument('--messages',
             help='Use this argument to get the messages for the user',
-            action='store_true')        
+            action='store_true')
+        parser.add_argument('--unread',
+            help='Use this subargument to get only unread messages',
+            action='store_true')
         args = parser.parse_args()
 
         print (f"\n{color.gre}Starting Wilma poller...{color.rst}")
         wilma_user = input(f" {color.blu}Wilma username:{color.rst} ")
         wilma_pass = getpass(f" {color.blu}Wilma password:{color.rst} ")
         poller_session = wilma_session()
-        poller_session.login(wilma_user, wilma_pass)
+        try:
+            poller_session.login(wilma_user, wilma_pass)
+        except KeyError:
+            sys.exit(f"{color.red}Incorrect credentials{color.rst}\n")
 
         if args.roles:
             users = poller_session.get_roles()
@@ -172,13 +183,32 @@ if __name__ == '__main__':
 
         if args.messages:
             messages = poller_session.get_messages(slug, user_id)
-            
+
+            for message in messages:
+                try:
+                    for message_content in messages[message]:
+                        if args.unread:
+                            try:
+                                if message_content['Status']:
+                                    if message_content['Status'] == 1:
+                                        print (f"{message_content['TimeStamp']}\n {message_content['Subject']} \n{message_content['Sender']}")
+                            #The read messages don't have any status value, so skipping them elegantly :D
+                            except:
+                                pass
+                        else:
+                            print (f"{message_content['TimeStamp']}\n {message_content['Subject']} \n{message_content['Sender']}")
+                #The last object is the HTTP response code for the json (=200), so skipping it elegantly :D
+                except TypeError:
+                    pass
+
         poller_session.logout()
 
+    except KeyboardInterrupt:
+        print (f"\r{color.yel}User interrupted{color.rst}")
     except Exception as err:
         print (f"{color.red}Something borked!\n{color.rst}")
         try:
             poller_session.logout()
         except:
-            sys.exit(f"{color.red}Auto logout failed!{color.rst}\n")
+            sys.exit(f"{color.red}Auto logout failed!{color.rst}\n{err}\n")
         sys.exit(f"\n{err}\n")
