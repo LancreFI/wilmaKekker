@@ -2,10 +2,13 @@
 import requests, re, argparse, click, sys, urllib.parse, json
 from argparse import RawTextHelpFormatter
 from getpass import getpass
+from datetime import datetime
 
 wilma_url = "https://helsinki.inschool.fi"
 wilma_user_agent = "Wilmap0ller v0.1A"
-
+#Put your kids here and their 'primusId slug'
+#You can get them by running the --roles argument
+kids = { 'kidname': '1234567 !01234567', 'secondkidname': '2345678 !02345678' }
 
 class color:
     red = '\033[91m'
@@ -93,7 +96,19 @@ class wilma_session:
         else:
             wilma.schedule_response = wilma.session.get(f"{wilma_url}/{user_slug}/schedule?format=json")
         wilma.schedule_response.encoding = 'iso-8859-15'
-        return (wilma.schedule_response.text.split('var eventsJSON = ')[1].split(';',1)[0])
+        #Fix to proper JSON
+        wilma.schedule_unjson = wilma.schedule_response.text.split('var eventsJSON = ')[1].split(';',1)[0]
+        wilma.schedule_json = wilma.schedule_unjson.replace('ViewOnly:true', '"ViewOnly":true')
+        wilma.schedule_json = wilma.schedule_json.replace('ViewOnly:false', '"ViewOnly":false')
+        wilma.schedule_json = wilma.schedule_json.replace('DayCount:', '"DayCount":')
+        wilma.schedule_json = wilma.schedule_json.replace(' DayStarts:', '"DayStarts":')
+        wilma.schedule_json = wilma.schedule_json.replace(' DayEnds: ', '"DayEnds":')
+        wilma.schedule_json = wilma.schedule_json.replace(' Events : ', '"Events":')
+        wilma.schedule_json = wilma.schedule_json.replace(' ActiveTyyppi: ', '"ActiveTyyppi":')
+        wilma.schedule_json = wilma.schedule_json.replace(' ActiveId: ', '"ActiveId":')
+        wilma.schedule_json = wilma.schedule_json.replace(' DialogEnabled: ', '"DialogEnabled":')
+        wilma.schedule_json = json.loads(wilma.schedule_json)
+        return (wilma.schedule_json)
 
 
     def get_messages(wilma, user_slug, user_id):
@@ -101,6 +116,44 @@ class wilma_session:
         wilma.messages_response.encoding = 'iso-8859-15'
         wilma.messages_json = wilma.messages_response.json()
         return (wilma.messages_json)
+
+
+def parse_schedule(event):
+    start_time = event['Start']
+    if start_time%60 is 0:
+        start_h = str(start_time/60)
+        start_time = start_h + ':00'
+    else:
+        start_h = str(int(start_time/60))
+        start_m = str(start_time%60)
+        start_time = start_h + ':' + start_m
+
+        end_time = event['End']
+        if end_time%60 is 0:
+            end_h = str(end_time/60)
+            end_time = end_h + ':00'
+        else:
+            end_h = str(int(end_time/60))
+            end_m = str(end_time%60)
+            end_time = end_h + ':' + end_m
+
+    subject = event['Text']['0']
+    if event['LongText']['0'] != '':
+        subject = subject + ': ' + event['LongText']['0']
+
+    classroom = event['Huoneet']['0']
+
+    try:
+        classroom = classroom + ': ' + event['HuoneInfo']['0']['0']['nimi']
+    except:
+        pass
+
+    teacher=''
+    try:
+        teacher = event['OpeInfo']['0']['0']['nimi'] + '(' + event['OpeInfo']['0']['0']['lyhenne'] + ')'
+    except:
+        pass
+    print(f"{start_time} - {end_time}: {subject}\n  Teacher: {teacher}\n  Classroom: {classroom}\n\n")
 
 
 ##MAIN
@@ -142,8 +195,8 @@ if __name__ == '__main__':
             help='Use this argument if you want to view the guardian info',
             action='store_true')
         parser.add_argument('--schedule',
-            help="Use this argument if you want to view the student's schedule",
-            action='store_true')
+            help="Use this argument if you want to view the kid's \n"
+                "schedule, takes the kid's name as the parameter")
         parser.add_argument('--date',
             help='Use this subargument to define a specific schedule date')
         parser.add_argument('--messages',
@@ -176,10 +229,49 @@ if __name__ == '__main__':
             print (guardian_info)
 
         if args.schedule:
+            #This is jut an example how to get data out, if you want to do your own
+            #applications just use the schedule variable and the if args:date part
+            kid_name = args.schedule
+            if kid_name not in kids:
+                sys.exit(f'{color.red}Name {color.rst}{kid_name} {color.red}not'
+                    f' found from the name list!{color.rst}')
             schedule_date = False
             if args.date:
                 schedule_date = args.date
+            user_id = kids['kidname'].split()[0]
+            slug = kids['kidname'].split()[1]
             schedule = poller_session.get_schedule(slug, user_id, schedule_date)
+
+            schedule_header = True
+            day_check = 0
+            daynames = [ 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday' ]
+            for event in schedule['Events']:
+                if schedule_date:
+                    #Sometimes the schedule contains subjects that don't contain a date but
+                    #only the coordinates of the subject on the schedule
+                    schedule_day = datetime.strptime(schedule_date, '%d.%m.%Y').weekday()
+                    #So we need to actually pinpoint the days we want by the X1 coordinate
+                    #of the subject in the schedule on Monday X1=0, Tuesday X1=10000,
+                    #Wednesday X1=20000 etc.
+                    day_coordinate_x1 = schedule_day*10000
+                    if event['X1'] == day_coordinate_x1:
+                        if schedule_header:
+                            print (f'Schedule for {daynames[int(schedule_day)]} {schedule_date}:')
+                            schedule_header = False
+                        parse_schedule(event)
+                else:
+                    if day_check != event['X1']:
+                        day_check = event['X1']
+                        schedule_header = True
+
+                    if schedule_header:
+                        if day_check is 0:
+                            print (f'Schedule for this week\n\n{daynames[int(day_check/10000)]}:')
+                        else:
+                            print (f'{daynames[int(day_check/10000)]}:\n')
+                        schedule_header = False
+
+                    parse_schedule(event)
 
         if args.messages:
             messages = poller_session.get_messages(slug, user_id)
