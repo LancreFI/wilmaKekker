@@ -121,21 +121,21 @@ class wilma_session:
 def parse_schedule(event):
     start_time = event['Start']
     if start_time%60 is 0:
-        start_h = str(start_time/60)
+        start_h = str(int(start_time/60))
         start_time = start_h + ':00'
     else:
         start_h = str(int(start_time/60))
-        start_m = str(start_time%60)
+        start_m = str(int(start_time%60))
         start_time = start_h + ':' + start_m
 
-        end_time = event['End']
-        if end_time%60 is 0:
-            end_h = str(end_time/60)
-            end_time = end_h + ':00'
-        else:
-            end_h = str(int(end_time/60))
-            end_m = str(end_time%60)
-            end_time = end_h + ':' + end_m
+    end_time = event['End']
+    if end_time%60 is 0:
+        end_h = str(int(end_time/60))
+        end_time = end_h + ':00'
+    else:
+        end_h = str(int(end_time/60))
+        end_m = str(int(end_time%60))
+        end_time = end_h + ':' + end_m
 
     subject = event['Text']['0']
     if event['LongText']['0'] != '':
